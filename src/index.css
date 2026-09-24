@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: #0b0c10;
+  color: #f3f4f6;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+/* thin scrollbars for panels */
+.thin-scroll::-webkit-scrollbar { width: 8px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #33384a; border-radius: 4px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
