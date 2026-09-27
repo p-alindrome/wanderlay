@@ -16,7 +16,7 @@ const SRC_POINTS = 'route-points';
 
 export default function Step1CreateRoute() {
   const store = useRouteStore();
-  const { route, setRoute, activeBranchId, setActiveBranchId, addWaypoint, removeWaypoint, reorderWaypoint, addBranch } = store;
+  const { route, setRoute, activeBranchId, setActiveBranchId, addWaypoint, removeWaypoint, reorderWaypoint, clearBranch, addBranch } = store;
   const mapRef = useRef<MLMap | null>(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GeocodeResult[]>([]);
@@ -388,18 +388,31 @@ export default function Step1CreateRoute() {
         )}
 
         <div>
-          <div className="flex items-center justify-between">
-            <label className="text-xs uppercase tracking-wider text-white/40">
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-xs uppercase tracking-wider text-white/40 truncate">
               Waypoints — {activeBranch.name}
             </label>
             {activeBranch.waypointIds.length > 0 && (
-              <button
-                onClick={() => removeWaypoint(activeBranch.id, activeBranch.waypointIds[activeBranch.waypointIds.length - 1])}
-                className="text-xs text-white/50 hover:text-white"
-                title="Remove the last waypoint added to this branch"
-              >
-                ↩ Undo last
-              </button>
+              <div className="flex shrink-0 gap-2.5">
+                <button
+                  onClick={() => removeWaypoint(activeBranch.id, activeBranch.waypointIds[activeBranch.waypointIds.length - 1])}
+                  className="text-xs text-white/50 hover:text-white whitespace-nowrap"
+                  title="Remove the last waypoint added to this branch"
+                >
+                  ↩ Undo
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Clear all ${activeBranch.waypointIds.length} waypoint(s) from "${activeBranch.name}"?`)) {
+                      clearBranch(activeBranch.id);
+                    }
+                  }}
+                  className="text-xs text-white/50 hover:text-red-300 whitespace-nowrap"
+                  title="Remove every waypoint from this branch and start over"
+                >
+                  ✕ Clear
+                </button>
+              </div>
             )}
           </div>
           <div className="mt-1">

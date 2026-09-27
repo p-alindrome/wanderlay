@@ -39,6 +39,7 @@ interface Store {
   updateWaypoint: (id: string, patch: Partial<Waypoint>) => void;
   removeWaypoint: (branchId: string, waypointId: string) => void;
   reorderWaypoint: (branchId: string, fromIndex: number, toIndex: number) => void;
+  clearBranch: (branchId: string) => void;
 
   addBranch: (name: string, forkFromWaypointId?: string) => string;
   setSegment: (branchId: string, seg: RouteSegment) => void;
@@ -117,6 +118,21 @@ export function RouteProvider({ children }: { children: ReactNode }) {
       let next = touch({ ...prev, branches });
       next = rebuildBranchSegments(next, branchId);
       return next;
+    });
+  }
+
+  function clearBranch(branchId: string) {
+    setRoute((prev) => {
+      const branch = prev.branches.find((b) => b.id === branchId);
+      if (!branch) return prev;
+      const waypoints = { ...prev.waypoints };
+      for (const wid of branch.waypointIds) delete waypoints[wid];
+      const segments = { ...prev.segments };
+      for (const sid of branch.segmentIds) delete segments[sid];
+      const branches = prev.branches.map((b) =>
+        b.id === branchId ? { ...b, waypointIds: [], segmentIds: [] } : b
+      );
+      return touch({ ...prev, waypoints, segments, branches });
     });
   }
 
@@ -237,6 +253,7 @@ export function RouteProvider({ children }: { children: ReactNode }) {
       updateWaypoint,
       removeWaypoint,
       reorderWaypoint,
+      clearBranch,
       addBranch,
       setSegment,
       rebuildSegmentsForBranch,
