@@ -34,6 +34,20 @@ export default function Step1CreateRoute() {
   function ensureLayers(map: MLMap) {
     if (!map.getSource(SRC_LINES)) {
       map.addSource(SRC_LINES, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      // Dark casing underneath the colored line so routes stay visible
+      // regardless of branch color or basemap terrain color (a cream/white
+      // route line on the OSM basemap's cream terrain is otherwise
+      // invisible without this contrast layer).
+      map.addLayer({
+        id: SRC_LINES + '-casing',
+        type: 'line',
+        source: SRC_LINES,
+        paint: {
+          'line-color': '#0b0c10',
+          'line-width': 6,
+          'line-opacity': ['case', ['get', 'uncertain'], 0.35, 0.55],
+        },
+      });
       map.addLayer({
         id: SRC_LINES,
         type: 'line',
@@ -42,7 +56,7 @@ export default function Step1CreateRoute() {
           'line-color': ['get', 'color'],
           'line-width': 3,
           'line-dasharray': ['case', ['get', 'uncertain'], ['literal', [2, 2]], ['literal', [1, 0]]],
-          'line-opacity': ['case', ['get', 'uncertain'], 0.55, 0.95],
+          'line-opacity': ['case', ['get', 'uncertain'], 0.7, 1],
         },
       });
     }
@@ -98,6 +112,38 @@ export default function Step1CreateRoute() {
   }
 
   useEffect(render, [route]);
+
+  // Adding a waypoint via search/GPX/demo doesn't guarantee it's anywhere
+  // near whatever the map currently happens to be showing — it renders
+  // fine, just off-screen. Move the camera to it explicitly instead of
+  // leaving people hunting for a pin that "isn't showing up."
+  function flyToPoint(lng: number, lat: number) {
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 11), duration: 800 });
+  }
+
+  function fitToCoords(coords: [number, number][]) {
+    const map = mapRef.current;
+    if (!map || coords.length === 0) return;
+    let minLng = coords[0][0], maxLng = coords[0][0], minLat = coords[0][1], maxLat = coords[0][1];
+    for (const [lng, lat] of coords) {
+      minLng = Math.min(minLng, lng);
+      maxLng = Math.max(maxLng, lng);
+      minLat = Math.min(minLat, lat);
+      maxLat = Math.max(maxLat, lat);
+    }
+    if (minLng === maxLng && minLat === maxLat) {
+      flyToPoint(minLng, minLat);
+      return;
+    }
+    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 13, duration: 800 });
+  }
+
+  function centerOnRoute() {
+    const coords = Object.values(route.waypoints).map((w) => [w.lng, w.lat] as [number, number]);
+    fitToCoords(coords);
+  }
 
   async function appendWaypoint(wpInput: Omit<Waypoint, 'id'>, routeIt: boolean) {
     const branchId = activeBranch.id;
@@ -193,6 +239,7 @@ export default function Step1CreateRoute() {
   }
 
   function pickSearchResult(r: GeocodeResult) {
+    flyToPoint(r.lng, r.lat);
     appendWaypoint(
       {
         name: r.name.split(',')[0],
@@ -258,6 +305,7 @@ export default function Step1CreateRoute() {
             [segId]: { id: segId, fromWaypointId: startId, toWaypointId: endId, mode: 'gpx' as const, coordinates: parsed.trackPoints, uncertain: false },
           };
           const branches = prev.branches.map((b) => (b.id === branchId ? { ...b, waypointIds, segmentIds: [segId] } : b));
+          fitToCoords(parsed.trackPoints);
           return { ...prev, waypoints, segments, branches, updatedAt: new Date().toISOString() };
         } else {
           // waypoint-only GPX: chain them with straight (unconfirmed) segments
@@ -276,6 +324,7 @@ export default function Step1CreateRoute() {
             segments[sid] = { id: sid, fromWaypointId: waypointIds[i - 1], toWaypointId: waypointIds[i], mode: 'road', coordinates: [[a.lng, a.lat], [b.lng, b.lat]], uncertain: true };
           }
           const branches = prev.branches.map((b) => (b.id === branchId ? { ...b, waypointIds, segmentIds: segIds } : b));
+          fitToCoords(waypointIds.map((id) => [waypoints[id].lng, waypoints[id].lat]));
           return { ...prev, waypoints, segments, branches, updatedAt: new Date().toISOString() };
         }
       });
@@ -291,6 +340,7 @@ export default function Step1CreateRoute() {
     const demo = buildDemoRoute();
     setRoute(demo);
     setActiveBranchId(demo.branches[0].id);
+    fitToCoords(Object.values(demo.waypoints).map((w) => [w.lng, w.lat]));
     const resolved = await resolveRouteRoadSegments(demo, (done, total) => setBusy(`Resolving road routes ${done}/${total}…`));
     setRoute(resolved);
     setBusy(null);
@@ -452,6 +502,15 @@ export default function Step1CreateRoute() {
           <button onClick={loadDemo} className="text-sm py-2 rounded-md border border-white/15 hover:bg-white/10">
             Load demo route (Manali · Spiti · Zanskar)
           </button>
+          {Object.keys(route.waypoints).length > 0 && (
+            <button
+              onClick={centerOnRoute}
+              className="text-sm py-2 rounded-md border border-white/15 hover:bg-white/10"
+              title="Re-center the map on all of this route's waypoints"
+            >
+              🎯 Center map on route
+            </button>
+          )}
           <button onClick={saveRoute} className="text-sm py-2 rounded-md border border-white/15 hover:bg-white/10">
             Save route
           </button>

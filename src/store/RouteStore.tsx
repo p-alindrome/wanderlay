@@ -18,7 +18,7 @@ function emptyRoute(): RouteData {
     name: 'Untitled Route',
     waypoints: {},
     segments: {},
-    branches: [{ id: branchId, name: 'Main Route', waypointIds: [], segmentIds: [] }],
+    branches: [{ id: branchId, name: 'Main Route', waypointIds: [], segmentIds: [], color: BRANCH_COLORS[0], visible: true }],
     createdAt: now,
     updatedAt: now,
   };
