@@ -3,7 +3,7 @@ import type { Map as MLMap } from 'maplibre-gl';
 import MapView from './MapView';
 import WaypointList from './WaypointList';
 import { useRouteStore } from '../store/RouteStore';
-import { searchPlace, type GeocodeResult } from '../lib/geocode';
+import { searchPlace, reverseGeocode, type GeocodeResult } from '../lib/geocode';
 import { parseGpx } from '../lib/gpx';
 import { fetchRoadRoute, resolveRouteRoadSegments } from '../lib/routing';
 import { fetchElevations } from '../lib/elevation';
@@ -140,6 +140,16 @@ export default function Step1CreateRoute() {
     if (wpInput.elevationM === undefined) {
       fetchElevations([{ lat: wpInput.lat, lng: wpInput.lng }]).then(([ele]) => {
         if (!isNaN(ele)) updateElevation(newId, ele);
+      });
+    }
+
+    // best-effort reverse geocode for map-clicked points, which start out
+    // named "Point N" — swap in a real place name when Nominatim finds one
+    // nearby. Silently keeps the placeholder for remote spots with nothing
+    // to match (common off-trail / high-pass clicks).
+    if (wpInput.source === 'click') {
+      reverseGeocode(wpInput.lat, wpInput.lng).then((placeName) => {
+        if (placeName) store.updateWaypoint(newId, { name: placeName });
       });
     }
   }

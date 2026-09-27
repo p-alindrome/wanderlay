@@ -20,3 +20,33 @@ export async function searchPlace(query: string, signal?: AbortSignal): Promise<
     lng: parseFloat(d.lon),
   }));
 }
+
+/**
+ * Best-effort reverse geocode: turns a clicked lat/lng into a short, real
+ * place name via Nominatim. Returns null (never throws) on any failure —
+ * remote points (mountain passes, off-trail spots) often have nothing
+ * nearby, and callers should just fall back to a generic "Point N" name.
+ */
+export async function reverseGeocode(lat: number, lng: number, signal?: AbortSignal): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`;
+    const res = await fetch(url, { signal, headers: { Accept: 'application/json' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const addr = data.address ?? {};
+    const short: string | undefined =
+      addr.hamlet ||
+      addr.village ||
+      addr.town ||
+      addr.suburb ||
+      addr.neighbourhood ||
+      addr.city ||
+      addr.county ||
+      addr.state_district ||
+      data.name ||
+      (typeof data.display_name === 'string' ? data.display_name.split(',')[0] : undefined);
+    return short?.trim() || null;
+  } catch {
+    return null;
+  }
+}
