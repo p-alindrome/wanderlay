@@ -105,6 +105,21 @@ export interface OverlayStyle {
   customText: string;
   tripDate: string;
   unit: 'ft' | 'm';
+
+  /** an opaque, rounded-corner card drawn behind the route/markers/labels —
+   *  useful when the overlay sits on a busy photo and needs its own solid
+   *  "badge" background instead of floating directly on the image. */
+  cardBackground: CardBackgroundStyle;
+}
+
+export interface CardBackgroundStyle {
+  enabled: boolean;
+  color: string;
+  opacity: number;
+  /** space in px between the route/marker/label content and the card edge */
+  padding: number;
+  /** corner radius in px */
+  radius: number;
 }
 
 export interface ExportPreset {

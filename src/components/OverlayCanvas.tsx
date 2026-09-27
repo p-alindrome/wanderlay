@@ -118,6 +118,46 @@ const OverlayCanvas = forwardRef<SVGSVGElement, Props>(function OverlayCanvas(
   const glowId = `glow-${uidRef}`;
   const fontFamily = FONT_STACK[style.fontFamily];
 
+  // Opaque rounded-corner "card" hugging the route + markers + labels, so
+  // the overlay reads as a solid badge rather than floating directly on a
+  // busy photo. Best-effort bounding box: covers every point on a visible
+  // line/marker plus a fixed allowance for label text below them (labels
+  // are usually 1-2 short lines), rather than measuring exact glyph metrics.
+  const cardRect = useMemo(() => {
+    if (!style.cardBackground.enabled) return null;
+    const pts: [number, number][] = [];
+    for (const branch of route.branches) {
+      if (branch.visible === false) continue;
+      for (const segId of branch.segmentIds) {
+        const seg = route.segments[segId];
+        if (seg) for (const c of seg.coordinates) pts.push(project(c[0], c[1]));
+      }
+    }
+    let hasLabel = false;
+    for (const wp of Object.values(route.waypoints)) {
+      if (!wp.includeInOverlay || !shownWaypointIds.has(wp.id)) continue;
+      pts.push(project(wp.lng, wp.lat));
+      if (wp.showLabel) hasLabel = true;
+    }
+    if (pts.length === 0) return null;
+
+    let minX = pts[0][0], maxX = pts[0][0], minY = pts[0][1], maxY = pts[0][1];
+    for (const [x, y] of pts) {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+    const pad = style.cardBackground.padding;
+    const labelAllowance = hasLabel ? style.fontSizePx * 2.8 : 0;
+    return {
+      x: minX - pad,
+      y: minY - pad,
+      width: maxX - minX + pad * 2,
+      height: maxY - minY + pad * 2 + labelAllowance,
+    };
+  }, [route, shownWaypointIds, project, style.cardBackground, style.fontSizePx]);
+
   return (
     <svg
       ref={ref}
@@ -163,6 +203,19 @@ const OverlayCanvas = forwardRef<SVGSVGElement, Props>(function OverlayCanvas(
 
       {/* Route + markers + labels (and basemap, if any) move/resize together as one unit, independent of the photo underneath */}
       <g transform={overlayGroupTransform}>
+
+      {cardRect && (
+        <rect
+          x={cardRect.x}
+          y={cardRect.y}
+          width={cardRect.width}
+          height={cardRect.height}
+          rx={style.cardBackground.radius}
+          ry={style.cardBackground.radius}
+          fill={style.cardBackground.color}
+          fillOpacity={style.cardBackground.opacity}
+        />
+      )}
 
       {(style.mode === 'faint-map' || style.mode === 'full-map') && mapImage && (
         <image

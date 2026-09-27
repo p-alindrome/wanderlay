@@ -307,6 +307,50 @@ export default function Step3OverlayDesigner() {
           />
         </Section>
 
+        <Section title="Card background">
+          <Toggle
+            label="Opaque rounded card"
+            checked={overlayStyle.cardBackground.enabled}
+            onChange={(v) => setOverlayStyle({ ...overlayStyle, cardBackground: { ...overlayStyle.cardBackground, enabled: v } })}
+          />
+          {overlayStyle.cardBackground.enabled && (
+            <>
+              <div className="text-[11px] text-white/30 -mt-1 mb-1">
+                Draws a solid rounded-corner badge behind the route, markers, and labels — handy on busy photos.
+              </div>
+              <ColorRow
+                label="Color"
+                value={overlayStyle.cardBackground.color}
+                onChange={(v) => setOverlayStyle({ ...overlayStyle, cardBackground: { ...overlayStyle.cardBackground, color: v } })}
+              />
+              <Slider
+                label="Opacity"
+                value={overlayStyle.cardBackground.opacity}
+                min={0.1}
+                max={1}
+                step={0.05}
+                onChange={(v) => setOverlayStyle({ ...overlayStyle, cardBackground: { ...overlayStyle.cardBackground, opacity: v } })}
+              />
+              <Slider
+                label="Padding"
+                value={overlayStyle.cardBackground.padding}
+                min={0}
+                max={80}
+                step={2}
+                onChange={(v) => setOverlayStyle({ ...overlayStyle, cardBackground: { ...overlayStyle.cardBackground, padding: v } })}
+              />
+              <Slider
+                label="Corner radius"
+                value={overlayStyle.cardBackground.radius}
+                min={0}
+                max={80}
+                step={2}
+                onChange={(v) => setOverlayStyle({ ...overlayStyle, cardBackground: { ...overlayStyle.cardBackground, radius: v } })}
+              />
+            </>
+          )}
+        </Section>
+
         <Section title="Photo">
           <input
             ref={photoInputRef}

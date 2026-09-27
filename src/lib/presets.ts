@@ -30,6 +30,13 @@ const base: Omit<OverlayStyle, 'presetId'> = {
   customText: '',
   tripDate: '',
   unit: 'ft',
+  cardBackground: {
+    enabled: false,
+    color: '#0b0c10',
+    opacity: 0.55,
+    padding: 28,
+    radius: 24,
+  },
 };
 
 export const PRESETS: Record<string, OverlayStyle> = {
